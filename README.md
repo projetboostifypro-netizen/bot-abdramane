@@ -30,7 +30,7 @@ npm run dev
 ## Architecture
 
 ```
-Navigateur → /api/*  → Vercel Proxy → 51.83.103.24:3001
+Navigateur → /api/*  → Vercel Proxy → 51.83.103.24:20090
 Navigateur → /*      → Vercel SPA   → index.html
 ```
 
