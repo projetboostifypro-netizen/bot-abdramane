@@ -156,9 +156,9 @@ const AdminPanel = () => {
     setSaving(true);
     try {
       await adminApi.updateSubscription(edit.userId, edit.plan, edit.ram_limit);
-      toast({ title: "Abonnement mis à jour" });
-      setEdit(null);
       await fetchData();
+      setEdit(null);
+      toast({ title: "Abonnement mis à jour" });
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally {

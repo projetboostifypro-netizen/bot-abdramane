@@ -1,4 +1,6 @@
-const SOLEASPAY_BASE = "https://soleaspay.com";
+import { getToken } from "./api";
+
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export interface PayinPayload {
   wallet: string;
@@ -94,54 +96,33 @@ export function isFailure(status: string): boolean {
   ].includes(status);
 }
 
+// Appels SoleasPay via le backend VPS (évite CORS + clé API côté frontend)
+function authHeader() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function initiatePayin(payload: PayinPayload): Promise<SoleasRaw> {
-  const apiKey = import.meta.env.VITE_SOLEASPAY_API_KEY;
-  if (!apiKey) throw new Error("Clé SoleasPay non configurée");
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "x-api-key": apiKey,
-    "operation": "2",
-    "service": String(payload.service),
-  };
-  if (payload.otp) headers["otp"] = payload.otp;
-
-  const res = await fetch(`${SOLEASPAY_BASE}/api/agent/bills/v3`, {
+  const res = await fetch(`${BASE_URL}/api/credits/soleaspay-initiate`, {
     method: "POST",
-    headers,
-    body: JSON.stringify({
-      wallet: payload.wallet,
-      amount: payload.amount,
-      currency: payload.currency,
-      order_id: payload.order_id,
-      description: payload.description,
-      payer: payload.payer,
-      payerEmail: payload.payerEmail,
-      successUrl: window.location.origin + "/dashboard/credits",
-      failureUrl: window.location.origin + "/dashboard/credits",
-    }),
+    headers: { "Content-Type": "application/json", ...authHeader() },
+    body: JSON.stringify(payload),
   });
-
   const data = await res.json().catch(() => ({}));
-  console.log("[SoleasPay pay-in]", JSON.stringify(data));
+  if (!res.ok) throw new Error(data?.error || `Erreur ${res.status}`);
   return data;
 }
 
 export async function verifyPayment(orderId: string, payId: string, serviceId: number): Promise<SoleasRaw> {
-  const apiKey = import.meta.env.VITE_SOLEASPAY_API_KEY;
-  if (!apiKey) throw new Error("Clé SoleasPay non configurée");
-
-  const url = `${SOLEASPAY_BASE}/api/agent/verif-pay?orderId=${encodeURIComponent(orderId)}&payId=${encodeURIComponent(payId)}`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      "x-api-key": apiKey,
-      "operation": "2",
-      "service": String(serviceId),
-    },
+  const params = new URLSearchParams({
+    orderId,
+    payId,
+    service: String(serviceId),
   });
-
+  const res = await fetch(`${BASE_URL}/api/credits/soleaspay-verify?${params}`, {
+    headers: { ...authHeader() },
+  });
   const data = await res.json().catch(() => ({}));
-  console.log("[SoleasPay verify]", JSON.stringify(data));
+  if (!res.ok) throw new Error(data?.error || `Erreur ${res.status}`);
   return data;
 }
