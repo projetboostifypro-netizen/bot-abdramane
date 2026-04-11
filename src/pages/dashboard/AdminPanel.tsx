@@ -9,9 +9,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
   Loader2, Users, Bot, Server, Edit2, X, Check,
   Globe, Clock, CheckCircle2, Truck, Copy, Trash2, RefreshCw, Download, Pencil, Info,
   FolderArchive, MonitorSmartphone, HardDrive, Package,
@@ -615,22 +612,28 @@ const AdminPanel = () => {
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label>Plan</Label>
-                <Select
-                  value={edit.plan}
-                  onValueChange={(val) => setEdit({ ...edit, plan: val, ram_limit: PLAN_RAM[val] || 308 })}
-                  modal={false}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-[200]">
-                    {PLANS.map(p => (
-                      <SelectItem key={p} value={p}>
-                        {p.charAt(0).toUpperCase() + p.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="rounded-lg border border-input divide-y divide-border bg-background overflow-hidden">
+                  {PLANS.map(p => {
+                    const selected = edit.plan === p;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setEdit({ ...edit, plan: p, ram_limit: PLAN_RAM[p] || 308 })}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${
+                          selected
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-secondary/50 text-foreground"
+                        }`}
+                      >
+                        <span>{p.charAt(0).toUpperCase() + p.slice(1)}</span>
+                        <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                          {PLAN_RAM[p] || 308} MB RAM
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>RAM (MB)</Label>
