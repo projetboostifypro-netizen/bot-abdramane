@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { creditsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -236,18 +235,29 @@ export default function CreditPaymentModal({ open, onClose, pack, onSuccess }: C
 
             <div className="space-y-2">
               <Label>Réseau Mobile Money</Label>
-              <Select value={serviceId} onValueChange={setServiceId} modal={false}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir un réseau..." />
-                </SelectTrigger>
-                <SelectContent className="z-[200]">
-                  {SOLEASPAY_NETWORKS.map((n) => (
-                    <SelectItem key={n.id} value={String(n.id)}>
-                      {n.name} — {n.country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-input divide-y divide-border bg-background">
+                {SOLEASPAY_NETWORKS.map((n) => {
+                  const selected = String(n.id) === serviceId;
+                  return (
+                    <button
+                      key={n.id}
+                      type="button"
+                      onClick={() => setServiceId(String(n.id))}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
+                        selected
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-secondary/50 text-foreground"
+                      }`}
+                    >
+                      <span>{n.name}</span>
+                      <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>{n.country}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {!serviceId && (
+                <p className="text-xs text-muted-foreground">Faites défiler et sélectionnez votre réseau</p>
+              )}
             </div>
 
             <div className="space-y-2">
