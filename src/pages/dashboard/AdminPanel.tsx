@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Loader2, Users, Bot, Server, Edit2, X, Check,
   Globe, Clock, CheckCircle2, Truck, Copy, Trash2, RefreshCw, Download, Pencil, Info,
   FolderArchive, MonitorSmartphone, HardDrive, Package,
@@ -572,50 +578,82 @@ const AdminPanel = () => {
         <div className="divide-y divide-border">
           {users.map((u) => (
             <div key={u.id} className="px-6 py-4">
-              {edit?.userId === u.id ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium">{u.name} — {u.email}</p>
-                    <button onClick={() => setEdit(null)} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
-                  </div>
-                  <div className="flex gap-3 items-end">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Plan</Label>
-                      <select value={edit.plan} onChange={e => setEdit({ ...edit, plan: e.target.value, ram_limit: PLAN_RAM[e.target.value] || 308 })}
-                        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm">
-                        {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">RAM (MB)</Label>
-                      <Input type="number" value={edit.ram_limit} onChange={e => setEdit({ ...edit, ram_limit: Number(e.target.value) })} className="w-24 h-9" />
-                    </div>
-                    <Button size="sm" onClick={saveEdit} disabled={saving}>
-                      {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                      Sauvegarder
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{u.name}</p>
+                  <p className="text-xs text-muted-foreground">{u.email} • {u.role}</p>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{u.name}</p>
-                    <p className="text-xs text-muted-foreground">{u.email} • {u.role}</p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{u.plan || "free"}</span>
-                    <span className="text-xs text-muted-foreground">{u.ram_limit || 308} MB</span>
-                    <button onClick={() => setEdit({ userId: u.id, plan: u.plan || "free", ram_limit: u.ram_limit || 308 })}
-                      className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{u.plan || "free"}</span>
+                  <span className="text-xs text-muted-foreground">{u.ram_limit || 308} MB</span>
+                  <button
+                    type="button"
+                    onClick={() => setEdit({ userId: u.id, plan: u.plan || "free", ram_limit: u.ram_limit || 308 })}
+                    className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* ── Modal modification plan utilisateur ── */}
+      <Dialog open={!!edit} onOpenChange={(open) => { if (!open) setEdit(null); }}>
+        <DialogContent className="max-w-sm bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Modifier l'abonnement</DialogTitle>
+            <DialogDescription>
+              {edit && users.find(u => u.id === edit.userId)
+                ? `${users.find(u => u.id === edit.userId)!.name} — ${users.find(u => u.id === edit.userId)!.email}`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {edit && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>Plan</Label>
+                <Select
+                  value={edit.plan}
+                  onValueChange={(val) => setEdit({ ...edit, plan: val, ram_limit: PLAN_RAM[val] || 308 })}
+                  modal={false}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]">
+                    {PLANS.map(p => (
+                      <SelectItem key={p} value={p}>
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>RAM (MB)</Label>
+                <Input
+                  type="number"
+                  value={edit.ram_limit}
+                  onChange={e => setEdit({ ...edit, ram_limit: Number(e.target.value) })}
+                  className="h-9"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setEdit(null)}>
+                  Annuler
+                </Button>
+                <Button type="button" className="flex-1" onClick={saveEdit} disabled={saving}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Sauvegarder
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

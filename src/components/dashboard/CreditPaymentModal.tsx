@@ -236,11 +236,11 @@ export default function CreditPaymentModal({ open, onClose, pack, onSuccess }: C
 
             <div className="space-y-2">
               <Label>Réseau Mobile Money</Label>
-              <Select value={serviceId} onValueChange={setServiceId}>
+              <Select value={serviceId} onValueChange={setServiceId} modal={false}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choisir un réseau..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   {SOLEASPAY_NETWORKS.map((n) => (
                     <SelectItem key={n.id} value={String(n.id)}>
                       {n.name} — {n.country}
