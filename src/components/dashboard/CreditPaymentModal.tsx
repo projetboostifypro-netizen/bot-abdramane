@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,7 @@ import {
   isSuccess, isFailure,
   SOLEASPAY_NETWORKS,
 } from "@/lib/soleaspay";
-import { CheckCircle, Loader2, AlertCircle, Phone, RefreshCw, Coins } from "lucide-react";
+import { CheckCircle, Loader2, AlertCircle, Phone, RefreshCw, Coins, X } from "lucide-react";
 
 interface Pack {
   id: string;
@@ -67,6 +66,8 @@ export default function CreditPaymentModal({ open, onClose, pack, onSuccess }: C
       setCreditedAmount(0);
     }
   }, [open]);
+
+  if (!open) return null;
 
   const totalCredits = pack.total ?? pack.credits;
   const selectedNetwork = SOLEASPAY_NETWORKS.find((n) => String(n.id) === serviceId);
@@ -205,191 +206,198 @@ export default function CreditPaymentModal({ open, onClose, pack, onSuccess }: C
     }
   };
 
+  const title = step === "success" ? "Crédits ajoutés !" : `Acheter — Pack ${pack.name}`;
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-md bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="font-heading">
-            {step === "success" ? "Crédits ajoutés !" : `Acheter — Pack ${pack.name}`}
-          </DialogTitle>
-          <DialogDescription>
-            {step === "form" && `${pack.amountXAF.toLocaleString("fr-FR")} FCFA via Mobile Money (SoleasPay)`}
-            {step === "processing" && "Initiation du paiement..."}
-            {step === "confirm_phone" && "Confirmez le paiement sur votre téléphone"}
-            {step === "verifying" && "Vérification en cours..."}
-            {step === "success" && `${creditedAmount} crédits ajoutés à votre compte.`}
-            {step === "error" && "Une erreur est survenue"}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* ── Formulaire ────────────────────────────────── */}
-        {step === "form" && (
-          <div className="space-y-4 pt-2">
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 flex items-center gap-3">
-              <Coins className="h-6 w-6 text-primary flex-shrink-0" />
-              <div>
-                <p className="font-bold text-primary text-lg">{totalCredits} crédits</p>
-                <p className="text-xs text-muted-foreground">{pack.price}€ — {pack.amountXAF.toLocaleString("fr-FR")} FCFA</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Réseau Mobile Money</Label>
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-input divide-y divide-border bg-background">
-                {SOLEASPAY_NETWORKS.map((n) => {
-                  const selected = String(n.id) === serviceId;
-                  return (
-                    <button
-                      key={n.id}
-                      type="button"
-                      onClick={() => setServiceId(String(n.id))}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
-                        selected
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "hover:bg-secondary/50 text-foreground"
-                      }`}
-                    >
-                      <span>{n.name}</span>
-                      <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>{n.country}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {!serviceId && (
-                <p className="text-xs text-muted-foreground">Faites défiler et sélectionnez votre réseau</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="wallet-cr">Numéro de téléphone</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="wallet-cr"
-                  className="pl-9"
-                  placeholder="ex: 690000001"
-                  value={wallet}
-                  onChange={(e) => setWallet(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {selectedNetwork?.id === 2 && (
-              <div className="space-y-2">
-                <Label htmlFor="otp-cr">Code OTP Orange Money (optionnel)</Label>
-                <Input
-                  id="otp-cr"
-                  placeholder="ex: 123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm text-primary">
-              Vous serez débité de <strong>{pack.amountXAF.toLocaleString("fr-FR")} FCFA</strong> sur le numéro renseigné.
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={onClose}>
-                Annuler
-              </Button>
-              <Button variant="hero" className="flex-1" onClick={startPayment}>
-                Payer maintenant
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Chargement ────────────────────────────────── */}
-        {(step === "processing" || step === "verifying") && (
-          <div className="flex flex-col items-center gap-4 py-8">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground text-sm text-center">
-              {step === "processing" ? "Envoi de la demande de paiement..." : "Vérification du paiement..."}
-            </p>
-          </div>
-        )}
-
-        {/* ── Confirmation téléphone ─────────────────────── */}
-        {step === "confirm_phone" && (
-          <div className="space-y-4 pt-2">
-            <div className="flex flex-col items-center gap-3 py-4">
-              <div className="h-14 w-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
-                <Phone className="h-7 w-7 text-yellow-400" />
-              </div>
-              <div className="text-center space-y-1">
-                <p className="font-semibold">Confirmez sur votre téléphone</p>
-                <p className="text-sm text-muted-foreground">
-                  Acceptez la demande de <strong>{pack.amountXAF.toLocaleString("fr-FR")} FCFA</strong> sur le <strong>{wallet}</strong>.
-                </p>
-              </div>
-            </div>
-
-            {payId && (
-              <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-                <div><span className="font-medium">Référence :</span> {payId}</div>
-                {rawStatus && <div><span className="font-medium">Statut :</span> {rawStatus}</div>}
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-              <RefreshCw className="h-3 w-3 animate-spin" />
-              Vérification automatique... ({attempts}/36)
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={onClose}>
-                Fermer
-              </Button>
-              <Button variant="hero" className="flex-1" onClick={manualVerify}>
-                Vérifier maintenant
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Succès ──────────────────────────────────────── */}
-        {step === "success" && (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <div className="h-16 w-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
-              <CheckCircle className="h-9 w-9 text-green-500" />
-            </div>
-            <div className="text-center space-y-1">
-              <p className="font-bold text-primary text-2xl">+{creditedAmount} crédits</p>
-              <p className="text-sm text-muted-foreground">
-                Votre solde a été mis à jour avec succès !
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
+      <div className="bg-card rounded-xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-6 space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-heading font-semibold text-lg">{title}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {step === "form" && `${pack.amountXAF.toLocaleString("fr-FR")} FCFA via Mobile Money (SoleasPay)`}
+                {step === "processing" && "Initiation du paiement..."}
+                {step === "confirm_phone" && "Confirmez le paiement sur votre téléphone"}
+                {step === "verifying" && "Vérification en cours..."}
+                {step === "success" && `${creditedAmount} crédits ajoutés à votre compte.`}
+                {step === "error" && "Une erreur est survenue"}
               </p>
             </div>
-            <Button variant="hero" className="w-full" onClick={onClose}>
-              Fermer
-            </Button>
-          </div>
-        )}
-
-        {/* ── Erreur ──────────────────────────────────────── */}
-        {step === "error" && (
-          <div className="space-y-4 pt-2">
-            <div className="flex flex-col items-center gap-3 py-4">
-              <AlertCircle className="h-12 w-12 text-destructive" />
-              <p className="text-center text-sm text-muted-foreground whitespace-pre-line">{errorMsg}</p>
-            </div>
-            {payId && (
-              <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground break-all">
-                <span className="font-medium">Référence :</span> {payId}
-              </div>
+            {(step === "form" || step === "error" || step === "success") && (
+              <button type="button" onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground flex-shrink-0">
+                <X className="h-4 w-4" />
+              </button>
             )}
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={onClose}>
+          </div>
+
+          {/* ── Formulaire ── */}
+          {step === "form" && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 flex items-center gap-3">
+                <Coins className="h-6 w-6 text-primary flex-shrink-0" />
+                <div>
+                  <p className="font-bold text-primary text-lg">{totalCredits} crédits</p>
+                  <p className="text-xs text-muted-foreground">{pack.price}€ — {pack.amountXAF.toLocaleString("fr-FR")} FCFA</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Réseau Mobile Money</Label>
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-input divide-y divide-border bg-background">
+                  {SOLEASPAY_NETWORKS.map((n) => {
+                    const selected = String(n.id) === serviceId;
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => setServiceId(String(n.id))}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors ${
+                          selected ? "bg-primary/10 text-primary font-medium" : "hover:bg-secondary/50 text-foreground"
+                        }`}
+                      >
+                        <span>{n.name}</span>
+                        <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>{n.country}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!serviceId && (
+                  <p className="text-xs text-muted-foreground">Faites défiler et sélectionnez votre réseau</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wallet-cr">Numéro de téléphone</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="wallet-cr"
+                    className="pl-9"
+                    placeholder="ex: 690000001"
+                    value={wallet}
+                    onChange={(e) => setWallet(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {selectedNetwork?.id === 2 && (
+                <div className="space-y-2">
+                  <Label htmlFor="otp-cr">Code OTP Orange Money (optionnel)</Label>
+                  <Input
+                    id="otp-cr"
+                    placeholder="ex: 123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-sm text-primary">
+                Vous serez débité de <strong>{pack.amountXAF.toLocaleString("fr-FR")} FCFA</strong> sur le numéro renseigné.
+              </div>
+
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                  Annuler
+                </Button>
+                <Button type="button" variant="hero" className="flex-1" onClick={startPayment}>
+                  Payer maintenant
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Traitement / Vérification ── */}
+          {(step === "processing" || step === "verifying") && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-muted-foreground text-sm text-center">
+                {step === "processing" ? "Envoi de la demande de paiement en cours..." : "Vérification du paiement..."}
+              </p>
+              <p className="text-xs text-muted-foreground text-center">Veuillez patienter, ne fermez pas cette page.</p>
+            </div>
+          )}
+
+          {/* ── Confirmation téléphone ── */}
+          {step === "confirm_phone" && (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="h-14 w-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
+                  <Phone className="h-7 w-7 text-yellow-400" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-semibold">Confirmez sur votre téléphone</p>
+                  <p className="text-sm text-muted-foreground">
+                    Acceptez la demande de <strong>{pack.amountXAF.toLocaleString("fr-FR")} FCFA</strong> sur le <strong>{wallet}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {payId && (
+                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+                  <div><span className="font-medium">Référence :</span> {payId}</div>
+                  {rawStatus && <div><span className="font-medium">Statut :</span> {rawStatus}</div>}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Vérification automatique... ({attempts}/36)
+              </div>
+
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                  Fermer
+                </Button>
+                <Button type="button" variant="hero" className="flex-1" onClick={manualVerify}>
+                  Vérifier maintenant
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Succès ── */}
+          {step === "success" && (
+            <div className="flex flex-col items-center gap-4 py-6">
+              <div className="h-16 w-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                <CheckCircle className="h-9 w-9 text-green-500" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-bold text-primary text-2xl">+{creditedAmount} crédits</p>
+                <p className="text-sm text-muted-foreground">Votre solde a été mis à jour avec succès !</p>
+              </div>
+              <Button type="button" variant="hero" className="w-full" onClick={onClose}>
                 Fermer
               </Button>
-              <Button variant="hero" className="flex-1" onClick={() => { setStep("form"); setErrorMsg(""); }}>
-                Réessayer
-              </Button>
             </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          )}
+
+          {/* ── Erreur ── */}
+          {step === "error" && (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3 py-4">
+                <AlertCircle className="h-12 w-12 text-destructive" />
+                <p className="text-center text-sm text-muted-foreground whitespace-pre-line">{errorMsg}</p>
+              </div>
+              {payId && (
+                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground break-all">
+                  <span className="font-medium">Référence :</span> {payId}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                  Fermer
+                </Button>
+                <Button type="button" variant="hero" className="flex-1" onClick={() => { setStep("form"); setErrorMsg(""); }}>
+                  Réessayer
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

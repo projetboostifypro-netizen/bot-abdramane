@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Loader2, Users, Bot, Server, Edit2, X, Check,
   Globe, Clock, CheckCircle2, Truck, Copy, Trash2, RefreshCw, Download, Pencil, Info,
   FolderArchive, MonitorSmartphone, HardDrive, Package,
@@ -598,65 +595,64 @@ const AdminPanel = () => {
       </div>
 
       {/* ── Modal modification plan utilisateur ── */}
-      <Dialog open={!!edit} onOpenChange={(open) => { if (!open) setEdit(null); }}>
-        <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Modifier l'abonnement</DialogTitle>
-            <DialogDescription>
-              {edit && users.find(u => u.id === edit.userId)
-                ? `${users.find(u => u.id === edit.userId)!.name} — ${users.find(u => u.id === edit.userId)!.email}`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          {edit && (
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Plan</Label>
-                <div className="rounded-lg border border-input divide-y divide-border bg-background overflow-hidden">
-                  {PLANS.map(p => {
-                    const selected = edit.plan === p;
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setEdit({ ...edit, plan: p, ram_limit: PLAN_RAM[p] || 308 })}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${
-                          selected
-                            ? "bg-primary/10 text-primary font-semibold"
-                            : "hover:bg-secondary/50 text-foreground"
-                        }`}
-                      >
-                        <span>{p.charAt(0).toUpperCase() + p.slice(1)}</span>
-                        <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>
-                          {PLAN_RAM[p] || 308} MB RAM
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+      {!!edit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
+          <div className="bg-card rounded-xl border border-border w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-heading font-semibold text-lg">Modifier l'abonnement</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {users.find(u => u.id === edit.userId)?.name} — {users.find(u => u.id === edit.userId)?.email}
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label>RAM (MB)</Label>
-                <Input
-                  type="number"
-                  value={edit.ram_limit}
-                  onChange={e => setEdit({ ...edit, ram_limit: Number(e.target.value) })}
-                  className="h-9"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => setEdit(null)}>
-                  Annuler
-                </Button>
-                <Button type="button" className="flex-1" onClick={saveEdit} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  Sauvegarder
-                </Button>
+              <button type="button" onClick={() => setEdit(null)} className="p-1 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <Label>Plan</Label>
+              <div className="rounded-lg border border-input divide-y divide-border bg-background overflow-hidden">
+                {PLANS.map(p => {
+                  const selected = edit.plan === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setEdit({ ...edit, plan: p, ram_limit: PLAN_RAM[p] || 308 })}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${
+                        selected ? "bg-primary/10 text-primary font-semibold" : "hover:bg-secondary/50 text-foreground"
+                      }`}
+                    >
+                      <span>{p.charAt(0).toUpperCase() + p.slice(1)}</span>
+                      <span className={`text-xs ${selected ? "text-primary" : "text-muted-foreground"}`}>
+                        {PLAN_RAM[p] || 308} MB RAM
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            <div className="space-y-2">
+              <Label>RAM (MB)</Label>
+              <Input
+                type="number"
+                value={edit.ram_limit}
+                onChange={e => setEdit({ ...edit, ram_limit: Number(e.target.value) })}
+                className="h-9"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEdit(null)}>
+                Annuler
+              </Button>
+              <Button type="button" className="flex-1" onClick={saveEdit} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Sauvegarder
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
